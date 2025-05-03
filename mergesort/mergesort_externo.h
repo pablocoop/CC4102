@@ -2,21 +2,12 @@
 #define MERGESORT_EXTERNO_H
 
 #include <string>
-#include <vector>
 
-class MergeSortExterno {
-public:
-    MergeSortExterno(size_t memoriaDisponible, size_t tamanoBloque);
+// Llama a la rutina principal de ordenamiento externo
+void external_mergesort(const std::string &input_filename, const std::string &output_filename, size_t M);
 
-    void ordenar(const std::string& archivoEntrada, const std::string& archivoSalida);
-
-private:
-    size_t M; // Memoria disponible (en bytes o elementos)
-    size_t B; // Tamaño del bloque (en bytes o elementos)
-
-    void generarRunsIniciales(const std::string& archivoEntrada, std::vector<std::string>& archivosRuns);
-    void mezclarRuns(const std::vector<std::string>& archivosRuns, const std::string& archivoSalida);
-    void mezclarDosRuns(const std::string& archivo1, const std::string& archivo2, const std::string& archivoSalida);
-};
+// Contadores globales de lecturas y escrituras a disco
+extern size_t read_count;
+extern size_t write_count;
 
 #endif // MERGESORT_EXTERNO_H
