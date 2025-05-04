@@ -5,6 +5,8 @@
 #include <string>
 #include <cstring>
 #include <cassert>
+#include <algorithm>
+#include <cstdlib>
 
 using namespace std;
 
@@ -73,25 +75,25 @@ vector<string> create_initial_runs(const string &filename, size_t M) {
     return runs;
 }
 
-// Mezcla k-way de los archivos temporales
-void k_way_merge(const vector<string> &runs, const string &output_filename) {
-    vector<ifstream> inputs(runs.size());
-    vector<int64_t> buffers(runs.size());
-    vector<bool> has_value(runs.size(), false);
+// Función para fusionar k archivos 
+void merge_k_files(const vector<string> &group, const string &merged_run) {
+    vector<ifstream> inputs(group.size());
+    vector<int64_t> buffers(group.size());
+    vector<bool> has_value(group.size(), false);
 
     // Abrir todos los archivos
-    for (size_t i = 0; i < runs.size(); ++i) {
-        inputs[i].open(runs[i], ios::binary);
+    for (size_t i = 0; i < group.size(); ++i) {
+        inputs[i].open(group[i], ios::binary);
         if (inputs[i].read(reinterpret_cast<char*>(&buffers[i]), INT64_SIZE)) {
             ++read_count;
             has_value[i] = true;
         }
     }
 
-    ofstream output(output_filename, ios::binary);
+    ofstream output(merged_run, ios::binary);
     priority_queue<HeapNode, vector<HeapNode>, greater<HeapNode>> min_heap;
 
-    for (size_t i = 0; i < runs.size(); ++i) {
+    for (size_t i = 0; i < group.size(); ++i) {
         if (has_value[i]) {
             min_heap.push({buffers[i], i});
         }
@@ -109,16 +111,47 @@ void k_way_merge(const vector<string> &runs, const string &output_filename) {
     }
 
     // Cerrar y eliminar archivos temporales
-    for (size_t i = 0; i < runs.size(); ++i) {
+    for (size_t i = 0; i < group.size(); ++i) {
         inputs[i].close();
-        remove(runs[i].c_str());
+        remove(group[i].c_str());
     }
 
     output.close();
 }
 
-// MergeSort externo principal
-void external_mergesort(const string &input_filename, const string &output_filename, size_t M) {
-    vector<string> runs = create_initial_runs(input_filename, M);
-    k_way_merge(runs, output_filename);
+// Mezcla k-way de los archivos temporales con aridad d
+void k_way_merge_with_arity(const vector<string> &runs, const string &output_filename, size_t d) {
+    vector<string> current_runs = runs;
+
+    // Realizamos la fusión hasta que queden solo un archivo
+    while (current_runs.size() > 1) {
+        vector<string> next_runs;
+
+        // Fusionamos archivos en grupos de tamaño d
+        for (size_t i = 0; i < current_runs.size(); i += d) {
+            vector<string> group;
+            for (size_t j = i; j < i + d && j < current_runs.size(); ++j) {
+                group.push_back(current_runs[j]);
+            }
+
+            // Nombre para el archivo fusionado
+            string merged_run = "merged_" + to_string(rand()) + ".bin";
+            merge_k_files(group, merged_run);  // Aquí realizarías la fusión real
+            next_runs.push_back(merged_run);
+        }
+
+        current_runs = next_runs;
+    }
+
+    // Renombrar el archivo final como output
+    if (!current_runs.empty()) {
+        rename(current_runs[0].c_str(), output_filename.c_str());
+    }
 }
+
+// MergeSort externo principal con aridad
+void external_mergesort(const string &input_filename, const string &output_filename, size_t M, size_t d) {
+    vector<string> runs = create_initial_runs(input_filename, M);
+    k_way_merge_with_arity(runs, output_filename, d);
+}
+

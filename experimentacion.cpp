@@ -49,7 +49,7 @@ void run_experiment(size_t N, size_t a) {
         // MergeSort externo
         read_count = write_count = 0;
         auto t1 = high_resolution_clock::now();
-        external_mergesort(input_file, output_file_merge, M);
+        external_mergesort(input_file, output_file_merge, M, a);
         auto t2 = high_resolution_clock::now();
         merge_times.push_back(duration<double>(t2 - t1).count());
         merge_reads.push_back(read_count);
@@ -87,8 +87,8 @@ void run_experiment(size_t N, size_t a) {
 }
 
 int main() {
-    size_t values[] = {4, 8, 16, 32, 60}; // factores de M
-    size_t a = 8; // Reemplazar con la aridad óptima encontrada en búsqueda binaria
+    size_t values[] = {4, 8, 16, 32, 60}; 
+    size_t a = 8; // Reemplazar con la aridad óptima de buscar_aridad
 
     for (size_t factor : values) {
         size_t N = (M / INT64_SIZE) * factor;
