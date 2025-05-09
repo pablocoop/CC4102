@@ -11,8 +11,6 @@ extern const size_t INT64_SIZE;
 extern const size_t BLOCK_SIZE;
 extern const size_t MAX_IN_MEMORY;
 
-extern size_t read_count;
-extern size_t write_count;
 
 // Nodo para el heap durante el merge
 struct HeapNode {

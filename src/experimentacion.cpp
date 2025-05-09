@@ -4,14 +4,16 @@
 #include <chrono>
 #include <random>
 #include <cassert>
-#include "mergesort_externo.h"
+#include <cstdint>
+
+#include "mergesort_ext_aridad.h"
 #include "quicksort_externo.h"
+#include "contadores.h"
+
 
 using namespace std;
 using namespace chrono;
 
-extern size_t read_count;
-extern size_t write_count;
 
 const size_t M = 50 * 1024 * 1024; // 50 MB
 const size_t INT64_SIZE = sizeof(int64_t);
@@ -49,7 +51,8 @@ void run_experiment(size_t N, size_t a) {
         // MergeSort externo
         read_count = write_count = 0;
         auto t1 = high_resolution_clock::now();
-        external_mergesort(input_file, output_file_merge, M, a);
+        ext_aridad_mergesort(input_file, output_file_merge, M, a);
+        //external_mergesort(input_file, output_file_merge, M, a);
         auto t2 = high_resolution_clock::now();
         merge_times.push_back(duration<double>(t2 - t1).count());
         merge_reads.push_back(read_count);

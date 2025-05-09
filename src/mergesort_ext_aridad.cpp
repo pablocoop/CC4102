@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <algorithm>
+#include <cstdint>
 
 using namespace std;
 
@@ -15,8 +16,7 @@ const size_t INT64_SIZE = sizeof(int64_t);
 const size_t BLOCK_SIZE = 4096;              // B: Tamaño de bloque (ej. 4KB)
 const size_t MAX_IN_MEMORY = 50 * 1024 * 1024; // M: Memoria disponible (ej. 50MB)
 
-size_t read_count = 0;
-size_t write_count = 0;
+#include "contadores.h"
 
 // Estructura para el heap durante el merge
 struct HeapNode {

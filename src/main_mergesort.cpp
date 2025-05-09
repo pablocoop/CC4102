@@ -5,6 +5,7 @@
 #include <vector>
 #include <random>
 #include <cassert>
+#include "contadores.h"
 
 using namespace std;
 
