@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstring> // memcpy
 #include <cassert>
+#include <cstdint>
 
 using namespace std;
 
@@ -15,9 +16,7 @@ const size_t INT64_SIZE = sizeof(int64_t);
 const size_t BLOCK_SIZE = 4096; // B (por ejemplo: 4KB)
 const size_t MAX_IN_MEMORY = 50 * 1024 * 1024; // M: 50MB
 
-// Contadores de accesos a disco
-size_t read_count = 0;
-size_t write_count = 0;
+#include "contadores.h"
 
 // Leer un bloque de tamaño fijo desde el archivo
 void read_block(ifstream &file, vector<int64_t> &buffer, size_t block_index, size_t block_elements) {

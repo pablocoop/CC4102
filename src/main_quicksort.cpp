@@ -2,6 +2,8 @@
 #include <fstream>
 #include <random>
 #include "quicksort_externo.h"
+#include "contadores.h"
+
 
 using namespace std;
 
