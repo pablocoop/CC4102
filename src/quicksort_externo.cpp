@@ -112,7 +112,7 @@ void concatenate(fstream &file, size_t start, const vector<string>& partitions) 
         ifstream in(fname, ios::binary);
 
         in.seekg(0, ios::end);
-        size_t file_size = in.tellg();
+        //size_t file_size = in.tellg();
         in.seekg(0, ios::beg);
 
         vector<char> buffer(BLOCK_SIZE);
