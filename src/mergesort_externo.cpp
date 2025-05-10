@@ -76,13 +76,14 @@ vector<string> create_initial_runs(const string &filename, size_t M) {
 }
 
 // Función para fusionar k archivos 
-void merge_k_files(const vector<string> &group, const string &merged_run) {
+void merge(const vector<string> &group, const string &merged_run) {
     vector<ifstream> inputs(group.size());
     vector<int64_t> buffers(group.size());
     vector<bool> has_value(group.size(), false);
+    size_t group_size = group.size();
 
     // Abrir todos los archivos
-    for (size_t i = 0; i < group.size(); ++i) {
+    for (size_t i = 0; i < group_size; ++i) {
         inputs[i].open(group[i], ios::binary);
         if (inputs[i].read(reinterpret_cast<char*>(&buffers[i]), INT64_SIZE)) {
             ++read_count;
@@ -136,7 +137,7 @@ void k_way_merge_with_arity(const vector<string> &runs, const string &output_fil
 
             // Nombre para el archivo fusionado
             string merged_run = "merged_" + to_string(rand()) + ".bin";
-            merge_k_files(group, merged_run);  // Aquí realizarías la fusión real
+            merge(group, merged_run);  // Aquí realizarías la fusión real
             next_runs.push_back(merged_run);
         }
 
