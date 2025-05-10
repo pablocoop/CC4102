@@ -1,7 +1,20 @@
-# Makefile for C++ project
-# This Makefile is used to compile and run a C++ program
-# HAY QUE CAMBIARLO
+# Compilador
+CXX = g++
+CXXFLAGS = -std=c++17 -O2 -Wall
 
-run:
-	g++ -std=c++17 main.cpp -o main.out
-	./main.out
+# Archivos fuente
+SRC = main.cpp mergesort_ext_aridad.cpp quicksort_externo.cpp contadores.cpp
+
+# Nombre del ejecutable
+TARGET = main
+
+# Regla por defecto
+all: $(TARGET)
+
+# Compilación del ejecutable
+$(TARGET): $(SRC)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
+
+# Limpiar archivos generados
+clean:
+	rm -f $(TARGET) *.o *.bin run_*.bin merged_*.bin input_*.bin output_*.bin

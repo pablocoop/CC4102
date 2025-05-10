@@ -75,76 +75,109 @@ vector<string> create_initial_runs(const string &filename, size_t M) {
     return runs;
 }
 
-// Función para fusionar k archivos 
 void merge(const vector<string> &group, const string &merged_run) {
-    vector<ifstream> inputs(group.size());
-    vector<int64_t> buffers(group.size());
-    vector<bool> has_value(group.size(), false);
     size_t group_size = group.size();
+    size_t buffer_capacity = BLOCK_SIZE / INT64_SIZE;
 
-    // Abrir todos los archivos
-    for (size_t i = 0; i < group_size; ++i) {
-        inputs[i].open(group[i], ios::binary);
-        if (inputs[i].read(reinterpret_cast<char*>(&buffers[i]), INT64_SIZE)) {
-            ++read_count;
-            has_value[i] = true;
-        }
-    }
+    vector<ifstream> inputs(group_size);
+    vector<vector<int64_t>> input_buffers(group_size, vector<int64_t>(buffer_capacity));
+    vector<size_t> buffer_indices(group_size, 0);
+    vector<size_t> buffer_sizes(group_size, 0);
+    vector<bool> finished(group_size, false);
 
     ofstream output(merged_run, ios::binary);
-    priority_queue<HeapNode, vector<HeapNode>, greater<HeapNode>> min_heap;
+    vector<int64_t> output_buffer;
+    output_buffer.reserve(buffer_capacity);
 
-    for (size_t i = 0; i < group.size(); ++i) {
-        if (has_value[i]) {
-            min_heap.push({buffers[i], i});
+    auto load_buffer = [&](size_t i) {
+    if (!inputs[i].eof()) {
+            inputs[i].read(reinterpret_cast<char*>(input_buffers[i].data()), buffer_capacity * INT64_SIZE);
+            size_t read_bytes = inputs[i].gcount();
+            buffer_sizes[i] = read_bytes / INT64_SIZE;
+            buffer_indices[i] = 0;
+            if (buffer_sizes[i] > 0) ++read_count;
+            else finished[i] = true;
+        } else {
+            finished[i] = true;
+        }
+    };
+
+    // Abrir archivos y cargar primer bloque
+    for (size_t i = 0; i < group_size; ++i) {
+        inputs[i].open(group[i], ios::binary);
+        load_buffer(i);
+    }
+
+    // Heap mínimo
+    priority_queue<HeapNode, vector<HeapNode>, greater<HeapNode>> min_heap;
+    for (size_t i = 0; i < group_size; ++i) {
+        if (!finished[i]) {
+            min_heap.push({input_buffers[i][buffer_indices[i]++], i});
         }
     }
 
     while (!min_heap.empty()) {
         HeapNode node = min_heap.top(); min_heap.pop();
-        output.write(reinterpret_cast<const char*>(&node.value), INT64_SIZE);
-        ++write_count;
+        output_buffer.push_back(node.value);
 
-        if (inputs[node.file_index].read(reinterpret_cast<char*>(&buffers[node.file_index]), INT64_SIZE)) {
-            ++read_count;
-            min_heap.push({buffers[node.file_index], node.file_index});
+        if (output_buffer.size() == buffer_capacity) {
+            write_block(output, output_buffer, buffer_capacity);
+            output_buffer.clear();
+        }
+
+        size_t src = node.file_index;
+        if (buffer_indices[src] < buffer_sizes[src]) {
+            min_heap.push({input_buffers[src][buffer_indices[src]++], src});
+        } else {
+            load_buffer(src);
+            if (!finished[src]) {
+                min_heap.push({input_buffers[src][buffer_indices[src]++], src});
+            }
         }
     }
 
-    // Cerrar y eliminar archivos temporales
-    for (size_t i = 0; i < group.size(); ++i) {
+    // Escribir lo que quede en el buffer de salida
+    if (!output_buffer.empty()) {
+        write_block(output, output_buffer, output_buffer.size());
+    }
+
+    // Cierre y limpieza
+    for (size_t i = 0; i < group_size; ++i) {
         inputs[i].close();
         remove(group[i].c_str());
     }
-
     output.close();
 }
 
+
 // Mezcla k-way de los archivos temporales con aridad d
-void k_way_merge_with_arity(const vector<string> &runs, const string &output_filename, size_t d) {
+void k_way_merge_with_arity(const vector<string> &runs, const string &output_filename, size_t d, size_t M) {
+    // Cálculo de la aridad máxima permitida
+    size_t max_d = (M - BLOCK_SIZE) / (BLOCK_SIZE + sizeof(HeapNode));
+    if (d > max_d) {
+        cerr << "Advertencia: aridad d reducida de " << d << " a " << max_d << " para no exceder M.\n";
+        d = max_d;
+    }
+
     vector<string> current_runs = runs;
 
-    // Realizamos la fusión hasta que queden solo un archivo
     while (current_runs.size() > 1) {
         vector<string> next_runs;
 
-        // Fusionamos archivos en grupos de tamaño d
         for (size_t i = 0; i < current_runs.size(); i += d) {
             vector<string> group;
             for (size_t j = i; j < i + d && j < current_runs.size(); ++j) {
                 group.push_back(current_runs[j]);
             }
 
-            // Nombre para el archivo fusionado
             string merged_run = "merged_" + to_string(rand()) + ".bin";
-            merge(group, merged_run);  // Aquí realizarías la fusión real
+            merge(group, merged_run);
             next_runs.push_back(merged_run);
         }
 
         current_runs = next_runs;
     }
 
-    // Renombrar el archivo final como output
     if (!current_runs.empty()) {
         rename(current_runs[0].c_str(), output_filename.c_str());
     }
@@ -153,6 +186,6 @@ void k_way_merge_with_arity(const vector<string> &runs, const string &output_fil
 // MergeSort externo principal con aridad
 void external_mergesort(const string &input_filename, const string &output_filename, size_t M, size_t d) {
     vector<string> runs = create_initial_runs(input_filename, M);
-    k_way_merge_with_arity(runs, output_filename, d);
+    k_way_merge_with_arity(runs, output_filename, d, M);
 }
 
