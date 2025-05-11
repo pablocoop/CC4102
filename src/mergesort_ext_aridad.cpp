@@ -191,6 +191,6 @@ void ext_aridad_mergesort(const string &input_filename, const string &output_fil
         rename(final_run[0].c_str(), output_filename.c_str());
     }
 
-    cout << "Lecturas de bloques: " << read_count << endl;
-    cout << "Escrituras de bloques: " << write_count << endl;
+    cout << "MS: Lecturas de bloques: " << read_count << endl;
+    cout << "MS: Escrituras de bloques: " << write_count << endl;
 }

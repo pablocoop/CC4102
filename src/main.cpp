@@ -33,11 +33,10 @@ void generate_random_file(const string &filename, size_t num_elements) {
 }
 
 // Ejecuta experimento para un tamaño dado N y aridad a
-void run_experiment(size_t N, size_t a) {
+void run_experiment(size_t N, size_t a, ofstream &out) {
     const string input_prefix = "input_" + to_string(N);
     const string output_prefix = "output_" + to_string(N);
 
-    vector<double> merge_times, quick_times;
     vector<size_t> merge_reads, merge_writes;
     vector<size_t> quick_reads, quick_writes;
 
@@ -50,57 +49,54 @@ void run_experiment(size_t N, size_t a) {
 
         // MergeSort externo
         read_count = write_count = 0;
-        auto t1 = high_resolution_clock::now();
         ext_aridad_mergesort(input_file, output_file_merge, M, a);
-        auto t2 = high_resolution_clock::now();
-        merge_times.push_back(duration<double>(t2 - t1).count());
         merge_reads.push_back(read_count);
         merge_writes.push_back(write_count);
 
         // QuickSort externo
         read_count = write_count = 0;
         fstream f(input_file, ios::in | ios::out | ios::binary);
-        auto t3 = high_resolution_clock::now();
         external_quicksort(f, 0, N, M, a);
-        auto t4 = high_resolution_clock::now();
-        quick_times.push_back(duration<double>(t4 - t3).count());
         quick_reads.push_back(read_count);
         quick_writes.push_back(write_count);
         f.close();
 
-        // Eliminar archivos temporales
         remove(input_file.c_str());
         remove(output_file_merge.c_str());
         remove(output_file_quick.c_str());
     }
 
-    // Promedios
-    auto avg = [](const vector<double>& v) {
-        double sum = 0;
-        for (auto x : v) sum += x;
-        return sum / v.size();
-    };
     auto avg_size = [](const vector<size_t>& v) {
         size_t sum = 0;
         for (auto x : v) sum += x;
         return sum / v.size();
     };
 
-    cout << "==== Resultados para N = " << N << " ====\n";
-    cout << "MergeSort - Tiempo: " << avg(merge_times) << " s, Lecturas: "
-         << avg_size(merge_reads) << ", Escrituras: " << avg_size(merge_writes) << "\n";
-    cout << "QuickSort - Tiempo: " << avg(quick_times) << " s, Lecturas: "
-         << avg_size(quick_reads) << ", Escrituras: " << avg_size(quick_writes) << "\n\n";
+    size_t N_bytes = N * INT64_SIZE;
+    out << N_bytes << " " 
+        << avg_size(merge_reads) << " " << avg_size(merge_writes) << " "
+        << avg_size(quick_reads) << " " << avg_size(quick_writes) << "\n";
 }
 
 int main() {
     size_t values[] = {4, 8, 16, 32, 60}; 
-    size_t a = 56; // Reemplazar con la aridad óptima de buscar_aridad
+    size_t a = 56;
+
+    ofstream out("resultados.txt");
+    if (!out.is_open()) {
+        cerr << "No se pudo abrir el archivo de salida.\n";
+        return 1;
+    }
+
+    // Cabecera
+    out << "# N_bytes Merge_lecturas Merge_escrituras Quick_lecturas Quick_escrituras\n";
 
     for (size_t factor : values) {
         size_t N = (M / INT64_SIZE) * factor;
-        run_experiment(N, a);
+        run_experiment(N, a, out);
     }
 
+    out.close();
     return 0;
 }
+

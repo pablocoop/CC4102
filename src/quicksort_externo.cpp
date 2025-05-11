@@ -5,7 +5,7 @@
 #include <vector>
 #include <random>
 #include <algorithm>
-#include <cstring> // memcpy
+#include <cstring>
 #include <cassert>
 #include <cstdint>
 
@@ -13,26 +13,12 @@ using namespace std;
 
 // Parámetros globales
 const size_t INT64_SIZE = sizeof(int64_t);
-const size_t BLOCK_SIZE = 4096; // B (por ejemplo: 4KB)
-const size_t MAX_IN_MEMORY = 50 * 1024 * 1024; // M: 50MB
+const size_t BLOCK_SIZE = 4096; // 4KB
+const size_t MAX_IN_MEMORY = 50 * 1024 * 1024; // 50MB
 
 #include "contadores.h"
 
-// Leer un bloque de tamaño fijo desde el archivo
-void read_block(ifstream &file, vector<int64_t> &buffer, size_t block_index, size_t block_elements) {
-    file.seekg(block_index * BLOCK_SIZE, ios::beg);
-    file.read(reinterpret_cast<char*>(buffer.data()), block_elements * INT64_SIZE);
-    ++read_count;
-}
-
-// Escribir un bloque de tamaño fijo al archivo
-void write_block(ofstream &file, const vector<int64_t> &buffer, size_t block_index, size_t block_elements) {
-    file.seekp(block_index * BLOCK_SIZE, ios::beg);
-    file.write(reinterpret_cast<const char*>(buffer.data()), block_elements * INT64_SIZE);
-    ++write_count;
-}
-
-// Función para ordenar en memoria si N <= M
+// Ordenar en memoria principal si el tamaño es suficientemente pequeño
 void sort_in_memory(fstream &file, size_t start, size_t end) {
     size_t num_elements = end - start;
     vector<int64_t> data(num_elements);
@@ -48,7 +34,7 @@ void sort_in_memory(fstream &file, size_t start, size_t end) {
     ++write_count;
 }
 
-// Elegir (a - 1) pivotes aleatorios del archivo
+// Seleccionar (a-1) pivotes aleatorios
 vector<int64_t> select_pivots(fstream &file, size_t start, size_t end, size_t a) {
     random_device rd;
     mt19937 gen(rd());
@@ -67,13 +53,13 @@ vector<int64_t> select_pivots(fstream &file, size_t start, size_t end, size_t a)
     return pivots;
 }
 
-// Particionar el arreglo en 'a' subarreglos en archivos temporales
-vector<string> partition(fstream &file, size_t start, size_t end, const vector<int64_t>& pivots) {
+// Particionar archivo original en archivos temporales según pivotes
+vector<pair<string, size_t>> partition(fstream &file, size_t start, size_t end, const vector<int64_t>& pivots) {
     size_t num_partitions = pivots.size() + 1;
     vector<ofstream> out_files(num_partitions);
     vector<string> filenames;
+    vector<size_t> counts(num_partitions, 0);
 
-    // Crear archivos temporales para cada partición
     for (size_t i = 0; i < num_partitions; ++i) {
         string fname = "temp_part_" + to_string(i) + ".bin";
         filenames.push_back(fname);
@@ -81,11 +67,10 @@ vector<string> partition(fstream &file, size_t start, size_t end, const vector<i
     }
 
     size_t total_elements = end - start;
-    file.seekg(start * INT64_SIZE, ios::beg);
-
-    // Procesar bloque por bloque
     size_t buffer_size = BLOCK_SIZE / INT64_SIZE;
     vector<int64_t> buffer(buffer_size);
+
+    file.seekg(start * INT64_SIZE, ios::beg);
 
     for (size_t i = 0; i < total_elements; i += buffer_size) {
         size_t count = min(buffer_size, total_elements - i);
@@ -98,22 +83,41 @@ vector<string> partition(fstream &file, size_t start, size_t end, const vector<i
             while (k < pivots.size() && val >= pivots[k]) ++k;
             out_files[k].write(reinterpret_cast<const char*>(&val), INT64_SIZE);
             ++write_count;
+            ++counts[k];
         }
     }
 
     for (auto& f : out_files) f.close();
-    return filenames;
+
+    vector<pair<string, size_t>> result;
+    for (size_t i = 0; i < num_partitions; ++i) {
+        result.emplace_back(filenames[i], counts[i]);
+    }
+    return result;
 }
 
-// Concatenar los archivos ordenados en el archivo original
-void concatenate(fstream &file, size_t start, const vector<string>& partitions) {
-    file.seekp(start * INT64_SIZE, ios::beg);
-    for (const auto& fname : partitions) {
-        ifstream in(fname, ios::binary);
+// Quicksort externo
+void external_quicksort(fstream &file, size_t start, size_t end, size_t M, size_t a) {
+    if ((end - start) * INT64_SIZE <= M) {
+        sort_in_memory(file, start, end);
+        return;
+    }
 
-        in.seekg(0, ios::end);
-        //size_t file_size = in.tellg();
-        in.seekg(0, ios::beg);
+    vector<int64_t> pivots = select_pivots(file, start, end, a);
+    vector<pair<string, size_t>> partitions = partition(file, start, end, pivots);
+
+    size_t current = start;
+    for (const auto& [fname, elems] : partitions) {
+        if (elems == 0) continue;
+
+        // Ordenar el subarchivo recursivamente
+        fstream part_file(fname, ios::in | ios::out | ios::binary);
+        external_quicksort(part_file, 0, elems, M, a);
+        part_file.close();
+
+        // Reescribir el contenido ordenado en el archivo original
+        ifstream in(fname, ios::binary);
+        file.seekp(current * INT64_SIZE, ios::beg);
 
         vector<char> buffer(BLOCK_SIZE);
         while (!in.eof()) {
@@ -128,34 +132,8 @@ void concatenate(fstream &file, size_t start, const vector<string>& partitions) 
 
         in.close();
         remove(fname.c_str());
-    }
-}
-
-// Quicksort externo principal
-void external_quicksort(fstream &file, size_t start, size_t end, size_t M, size_t a) {
-    if ((end - start) * INT64_SIZE <= M) {
-        sort_in_memory(file, start, end);
-        return;
-    }
-
-    vector<int64_t> pivots = select_pivots(file, start, end, a);
-    vector<string> partitions = partition(file, start, end, pivots);
-
-    size_t current = start;
-    for (const auto& fname : partitions) {
-        fstream part_file(fname, ios::in | ios::out | ios::binary);
-        part_file.seekg(0, ios::end);
-        size_t bytes = part_file.tellg();
-        size_t elems = bytes / INT64_SIZE;
-        part_file.close();
-
-        external_quicksort(file, current, current + elems, M, a);
         current += elems;
-
-        // Se elimina aquí también por seguridad
-        remove(fname.c_str());
     }
-
-    // concatenate también intentará eliminarlos, así que puedes comentar esas líneas si ya los borraste
-    concatenate(file, start, partitions);
+    cout << "QS: Lecturas de bloques: " << read_count << endl;
+    cout << "QS: Escrituras de bloques: " << write_count << endl;
 }

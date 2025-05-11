@@ -60,8 +60,16 @@ make
 
 # Extra:
 
-2. **Compilar el proyecto de mergesort:**
+2. **Compilar:**
 
 ```bash
 g++ -std=c++17 -IC:\Users\pablo\OneDrive\Documentos\CC4102\CC4102\include .\src\main.cpp .\src\quicksort_externo.cpp .\src\mergesort_ext_aridad.cpp .\src\contadores.cpp -o main
+
 ```
+
+```bash
+docker run --rm -it -m 50m -v ${PWD}:/workspace pabloskewes/cc4102-cpp-env bash
+
+```
+
+g++ -std=c++17 -IC:/Users/pablo/OneDrive/Documentos/CC4102/CC4102/include ./src/main.cpp ./src/quicksort_externo.cpp ./src/mergesort_ext_aridad.cpp ./src/contadores.cpp -o main
