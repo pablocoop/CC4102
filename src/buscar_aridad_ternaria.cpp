@@ -5,6 +5,9 @@
 #include <random>
 #include <climits>
 #include <cstdio> 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 
 #include "mergesort_ext_aridad.h"
 
@@ -20,6 +23,18 @@ const size_t M = 50 * 1024 * 1024; // 50 MB
 const size_t INT64_SIZE = sizeof(int64_t);
 const size_t N = 60 * (M / INT64_SIZE);
 
+void eliminar_archivos_merged() {
+    namespace fs = std::filesystem;
+    for (const auto& entry : fs::directory_iterator(".")) {
+        if (entry.is_regular_file()) {
+            string nombre = entry.path().filename().string();
+            if (nombre.rfind("merged_", 0) == 0 && entry.path().extension() == ".bin") {
+                fs::remove(entry.path());
+            }
+        }
+    }
+}
+
 void generate_random_file(const string &filename, size_t num_elements) {
     ofstream out(filename, ios::binary);
     random_device rd;
@@ -34,10 +49,13 @@ void generate_random_file(const string &filename, size_t num_elements) {
 }
 
 double test_mergesort(const string& input_file, const string& output_file, size_t d, double& avg_reads, double& avg_writes) {
+    cout << ">>> Probando a = " << d << endl;  // <-- añade esto
     vector<double> times;
     vector<size_t> reads, writes;
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 2; ++i) {
+        cout << ">>> Iteración " << i << endl;  // <-- añade esto
+        eliminar_archivos_merged();
         read_count = write_count = 0;
         auto t1 = high_resolution_clock::now();
         ext_aridad_mergesort(input_file, output_file, M, d); 
@@ -60,6 +78,8 @@ double test_mergesort(const string& input_file, const string& output_file, size_
 
     avg_reads = avg_size(reads);
     avg_writes = avg_size(writes);
+    // Eliminar archivos temporales merged_*.bin después de cada corrida
+    eliminar_archivos_merged();
     return avg(times); 
 }
 
@@ -84,11 +104,11 @@ void buscar_aridad_optima_ternaria() {
 
         double avg_reads1, avg_writes1;
         double avg_time1 = test_mergesort(input_file, output_file, m1, avg_reads1, avg_writes1);
-        double metric1 = avg_reads1 + avg_writes1;
+        double metric1 = avg_time1*0.1 + (avg_reads1 + avg_writes1); // el factor puede ajustarse
 
         double avg_reads2, avg_writes2;
         double avg_time2 = test_mergesort(input_file, output_file, m2, avg_reads2, avg_writes2);
-        double metric2 = avg_reads2 + avg_writes2;
+        double metric2 = avg_time2*0.1 + (avg_reads2 + avg_writes2);
 
         cout << "a = " << m1 << ": tiempo = " << avg_time1 << "s, I/Os = " << metric1 << "\n";
         cout << "a = " << m2 << ": tiempo = " << avg_time2 << "s, I/Os = " << metric2 << "\n";
@@ -119,7 +139,7 @@ void buscar_aridad_optima_ternaria() {
         }
     }
 
-    cout << "\n>> Mejor aridad encontrada: a = " << best_d << " con I/Os = " << best_metric << "\n";
+    cout << "\n>> Mejor aridad encontrada: a = " << best_d << " con tiempo = " << best_metric << "s\n";
 
     if (remove(input_file.c_str()) == 0)
         cout << "Archivo de entrada eliminado.\n";

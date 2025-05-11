@@ -52,7 +52,6 @@ void run_experiment(size_t N, size_t a) {
         read_count = write_count = 0;
         auto t1 = high_resolution_clock::now();
         ext_aridad_mergesort(input_file, output_file_merge, M, a);
-        //external_mergesort(input_file, output_file_merge, M, a);
         auto t2 = high_resolution_clock::now();
         merge_times.push_back(duration<double>(t2 - t1).count());
         merge_reads.push_back(read_count);
@@ -68,6 +67,11 @@ void run_experiment(size_t N, size_t a) {
         quick_reads.push_back(read_count);
         quick_writes.push_back(write_count);
         f.close();
+
+        // Eliminar archivos temporales
+        remove(input_file.c_str());
+        remove(output_file_merge.c_str());
+        remove(output_file_quick.c_str());
     }
 
     // Promedios
@@ -91,7 +95,7 @@ void run_experiment(size_t N, size_t a) {
 
 int main() {
     size_t values[] = {4, 8, 16, 32, 60}; 
-    size_t a = 8; // Reemplazar con la aridad óptima de buscar_aridad
+    size_t a = 56; // Reemplazar con la aridad óptima de buscar_aridad
 
     for (size_t factor : values) {
         size_t N = (M / INT64_SIZE) * factor;

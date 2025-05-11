@@ -151,7 +151,11 @@ void external_quicksort(fstream &file, size_t start, size_t end, size_t M, size_
 
         external_quicksort(file, current, current + elems, M, a);
         current += elems;
+
+        // Se elimina aquí también por seguridad
+        remove(fname.c_str());
     }
 
+    // concatenate también intentará eliminarlos, así que puedes comentar esas líneas si ya los borraste
     concatenate(file, start, partitions);
 }
