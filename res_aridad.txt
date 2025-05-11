@@ -1,0 +1,72 @@
+C:\Users\pablo\OneDrive\Documentos\CC4102\CC4102>g++ -std=c++17 -O2 -Iinclude src/buscar_aridad.cpp src/mergesort_ext_aridad.cpp -o buscar_aridad
+
+C:\Users\pablo\OneDrive\Documentos\CC4102\CC4102>.\buscar_aridad
+Buscando aridad ├│ptima...
+Lecturas de bloques: 735275
+Escrituras de bloques: 735275
+Lecturas de bloques: 425294
+Escrituras de bloques: 425294
+Lecturas de bloques: 417164
+Escrituras de bloques: 417164
+Lecturas de bloques: 407628
+Escrituras de bloques: 407628
+Lecturas de bloques: 391072
+Escrituras de bloques: 391072
+Aridad 33: tiempo=81.7353s, lecturas=475287, escrituras=475287
+Lecturas de bloques: 393523
+Escrituras de bloques: 393523
+Lecturas de bloques: 382204
+Escrituras de bloques: 382204
+Lecturas de bloques: 367995
+Escrituras de bloques: 367995
+Lecturas de bloques: 361436
+Escrituras de bloques: 361436
+Lecturas de bloques: 733132
+Escrituras de bloques: 733132
+Aridad 49: tiempo=78.6837s, lecturas=447658, escrituras=447658
+Lecturas de bloques: 602444
+Escrituras de bloques: 602444
+Lecturas de bloques: 557498
+Escrituras de bloques: 557498
+Lecturas de bloques: 533308
+Escrituras de bloques: 533308
+Lecturas de bloques: 528828
+Escrituras de bloques: 528828
+Lecturas de bloques: 1525220
+Escrituras de bloques: 1525220
+Aridad 57: tiempo=160.231s, lecturas=749460, escrituras=749460
+Lecturas de bloques: 814766
+Escrituras de bloques: 814766
+Lecturas de bloques: 730188
+Escrituras de bloques: 730188
+Lecturas de bloques: 673420
+Escrituras de bloques: 673420
+Lecturas de bloques: 761372
+Escrituras de bloques: 761372
+Lecturas de bloques: 675468
+Escrituras de bloques: 675468
+Aridad 53: tiempo=51.2126s, lecturas=731043, escrituras=731043
+Lecturas de bloques: 660972
+Escrituras de bloques: 660972
+Lecturas de bloques: 669260
+Escrituras de bloques: 669260
+Lecturas de bloques: 660707
+Escrituras de bloques: 660707
+Lecturas de bloques: 650369
+Escrituras de bloques: 650369
+Lecturas de bloques: 634587
+Escrituras de bloques: 634587
+Aridad 55: tiempo=49.4787s, lecturas=655179, escrituras=655179
+Lecturas de bloques: 623757
+Escrituras de bloques: 623757
+Lecturas de bloques: 611282
+Escrituras de bloques: 611282
+Lecturas de bloques: 596835
+Escrituras de bloques: 596835
+Lecturas de bloques: 585452
+Escrituras de bloques: 585452
+Lecturas de bloques: 603788
+Escrituras de bloques: 603788
+Aridad 56: tiempo=48.535s, lecturas=604223, escrituras=604223
+
+>> Mejor aridad encontrada: d = 56 con m├®trica = 48.535
