@@ -131,3 +131,9 @@ void buscar_aridad_optima_ternaria() {
     else
         cerr << "Error al eliminar archivo de salida.\n";
 }
+
+int main() {
+    buscar_aridad_optima_ternaria();
+    return 0;
+}
+
