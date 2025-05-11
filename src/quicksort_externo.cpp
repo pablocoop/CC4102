@@ -53,41 +53,58 @@ vector<int64_t> select_pivots(fstream &file, size_t start, size_t end, size_t a)
     return pivots;
 }
 
-// Particionar archivo original en archivos temporales según pivotes
 vector<pair<string, size_t>> partition(fstream &file, size_t start, size_t end, const vector<int64_t>& pivots) {
     size_t num_partitions = pivots.size() + 1;
     vector<ofstream> out_files(num_partitions);
-    vector<string> filenames;
+    vector<string> filenames(num_partitions);
     vector<size_t> counts(num_partitions, 0);
 
+    // Generar nombres únicos para los archivos temporales
     for (size_t i = 0; i < num_partitions; ++i) {
-        string fname = "temp_part_" + to_string(i) + ".bin";
-        filenames.push_back(fname);
-        out_files[i].open(fname, ios::binary);
+        filenames[i] = "temp_part_" + to_string(i) + "_" + to_string(start) + ".bin";
+        out_files[i].open(filenames[i], ios::binary);
     }
+
+    // Búferes por partición
+    const size_t buffer_capacity = BLOCK_SIZE / INT64_SIZE;
+    vector<vector<int64_t>> buffers(num_partitions);
 
     size_t total_elements = end - start;
     size_t buffer_size = BLOCK_SIZE / INT64_SIZE;
-    vector<int64_t> buffer(buffer_size);
+    vector<int64_t> read_buffer(buffer_size);
 
     file.seekg(start * INT64_SIZE, ios::beg);
 
     for (size_t i = 0; i < total_elements; i += buffer_size) {
         size_t count = min(buffer_size, total_elements - i);
-        file.read(reinterpret_cast<char*>(buffer.data()), count * INT64_SIZE);
+        file.read(reinterpret_cast<char*>(read_buffer.data()), count * INT64_SIZE);
         ++read_count;
 
         for (size_t j = 0; j < count; ++j) {
-            int64_t val = buffer[j];
+            int64_t val = read_buffer[j];
             size_t k = 0;
             while (k < pivots.size() && val >= pivots[k]) ++k;
-            out_files[k].write(reinterpret_cast<const char*>(&val), INT64_SIZE);
-            ++write_count;
+            buffers[k].push_back(val);
             ++counts[k];
+
+            // Si el búfer alcanza su capacidad, escribir en el archivo correspondiente
+            if (buffers[k].size() >= buffer_capacity) {
+                out_files[k].write(reinterpret_cast<const char*>(buffers[k].data()), buffers[k].size() * INT64_SIZE);
+                ++write_count;
+                buffers[k].clear();
+            }
         }
     }
 
-    for (auto& f : out_files) f.close();
+    // Escribir cualquier dato restante en los búferes
+    for (size_t k = 0; k < num_partitions; ++k) {
+        if (!buffers[k].empty()) {
+            out_files[k].write(reinterpret_cast<const char*>(buffers[k].data()), buffers[k].size() * INT64_SIZE);
+            ++write_count;
+            buffers[k].clear();
+        }
+        out_files[k].close();
+    }
 
     vector<pair<string, size_t>> result;
     for (size_t i = 0; i < num_partitions; ++i) {
@@ -95,6 +112,7 @@ vector<pair<string, size_t>> partition(fstream &file, size_t start, size_t end, 
     }
     return result;
 }
+
 
 // Quicksort externo
 void external_quicksort(fstream &file, size_t start, size_t end, size_t M, size_t a) {
