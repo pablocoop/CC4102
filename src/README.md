@@ -60,7 +60,7 @@ make
 
 # Extra:
 
-2. **Compilar:**
+2. **Compilar en MinGW:**
 
 ```bash
 g++ -std=c++17 -IC:\Users\pablo\OneDrive\Documentos\CC4102\CC4102\include .\src\main.cpp .\src\quicksort_externo.cpp .\src\mergesort_ext_aridad.cpp .\src\contadores.cpp -o main
@@ -89,8 +89,22 @@ g++ -std=c++17 -IC:/Users/pablo/OneDrive/Documentos/CC4102/CC4102/src ./src/main
 
 ## Compilar en MinGW:
 
-g++ -std=c++17 -IC:\Users\pablo\OneDrive\Documentos\CC4102\CC4102\include .\src\main.cpp .\src\quicksort_externo.cpp .\src\mergesort_ext_aridad.cpp .\src\contadores.cpp -o main
+g++ -std=c++17 -IC:\Users\pablo\OneDrive\Documentos\CC4102\CC4102\src .\src\main.cpp .\src\quicksort_externo.cpp .\src\mergesort_ext_aridad.cpp .\src\contadores.cpp -o main
 
 ## Ejecutar en MinGW:
 
 .\main 
+
+## Buscar aridad óptima en MinGW:
+
+g++ -std=c++17 -IC:\Users\pablo\OneDrive\Documentos\CC4102\CC4102\src .\src\buscar_aridad_ternaria.cpp .\src\mergesort_ext_aridad.cpp .\src\contadores.cpp -o buscar_aridad
+
+## Ejecutar en MinGW:
+
+.\buscar_aridad
+
+
+
+
+
+
