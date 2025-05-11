@@ -99,6 +99,7 @@ vector<pair<string, size_t>> partition(fstream &file, size_t start, size_t end, 
 // Quicksort externo
 void external_quicksort(fstream &file, size_t start, size_t end, size_t M, size_t a) {
     if ((end - start) * INT64_SIZE <= M) {
+        // Ordenar directamente en el archivo original si cabe en memoria
         sort_in_memory(file, start, end);
         return;
     }
@@ -115,25 +116,28 @@ void external_quicksort(fstream &file, size_t start, size_t end, size_t M, size_
         external_quicksort(part_file, 0, elems, M, a);
         part_file.close();
 
-        // Reescribir el contenido ordenado en el archivo original
-        ifstream in(fname, ios::binary);
-        file.seekp(current * INT64_SIZE, ios::beg);
+        // Solo si fue ordenado en el archivo temporal, copiar de nuevo al archivo principal
+        if (elems * INT64_SIZE > M) {
+            ifstream in(fname, ios::binary);
+            file.seekp(current * INT64_SIZE, ios::beg);
 
-        vector<char> buffer(BLOCK_SIZE);
-        while (!in.eof()) {
-            in.read(buffer.data(), BLOCK_SIZE);
-            size_t read_bytes = in.gcount();
-            if (read_bytes > 0) {
-                file.write(buffer.data(), read_bytes);
-                ++read_count;
-                ++write_count;
+            vector<char> buffer(BLOCK_SIZE);
+            while (!in.eof()) {
+                in.read(buffer.data(), BLOCK_SIZE);
+                size_t read_bytes = in.gcount();
+                if (read_bytes > 0) {
+                    file.write(buffer.data(), read_bytes);
+                    ++read_count;
+                    ++write_count;
+                }
             }
+            in.close();
         }
 
-        in.close();
         remove(fname.c_str());
         current += elems;
     }
+
     cout << "QS: Lecturas de bloques: " << read_count << endl;
     cout << "QS: Escrituras de bloques: " << write_count << endl;
 }

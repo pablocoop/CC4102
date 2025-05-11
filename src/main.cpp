@@ -93,6 +93,7 @@ int main() {
 
     for (size_t factor : values) {
         size_t N = (M / INT64_SIZE) * factor;
+        cout << "Valor de N: " << N << endl;
         run_experiment(N, a, out);
     }
 
