@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstdint>
 
+
 using namespace std;
 
 // Constantes globales
