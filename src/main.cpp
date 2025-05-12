@@ -10,94 +10,112 @@
 #include "quicksort_externo.h"
 #include "contadores.h"
 
-
 using namespace std;
 using namespace chrono;
-
 
 const size_t M = 50 * 1024 * 1024; // 50 MB
 const size_t INT64_SIZE = sizeof(int64_t);
 
 // Genera archivo binario con números aleatorios
-void generate_random_file(const string &filename, size_t num_elements) {
+template<typename URNG>
+void generate_random_file(const string &filename, size_t num_elements, URNG &gen) {
     ofstream out(filename, ios::binary);
-    random_device rd;
-    mt19937_64 gen(rd());
     uniform_int_distribution<int64_t> dist(1, 1000000);
-
     for (size_t i = 0; i < num_elements; ++i) {
         int64_t val = dist(gen);
         out.write(reinterpret_cast<const char *>(&val), INT64_SIZE);
     }
-    out.close();
 }
 
-// Ejecuta experimento para un tamaño dado N y aridad a
-void run_experiment(size_t N, size_t a, ofstream &out) {
-    const string input_prefix = "input_" + to_string(N);
-    const string output_prefix = "output_" + to_string(N);
+// Ejecuta el experimento: mide tiempo e I/O para Mergesort y Quicksort externo
+void run_experiment(size_t N_elems, size_t a, ofstream &out) {
+    // Prefijos para archivos temporales
+    string input_prefix = "input_" + to_string(N_elems);
+    string merge_prefix = "merge_out_" + to_string(N_elems);
 
+    // Contenedores para resultados (5 corridas)
+    vector<double> merge_times, quick_times;
     vector<size_t> merge_reads, merge_writes;
     vector<size_t> quick_reads, quick_writes;
 
-    for (int i = 0; i < 5; ++i) {
-        string input_file = input_prefix + "_run" + to_string(i) + ".bin";
-        string output_file_merge = output_prefix + "_merge_run" + to_string(i) + ".bin";
-        string output_file_quick = output_prefix + "_quick_run" + to_string(i) + ".bin";
+    // Random engine que persiste semilla para reproducibilidad
+    random_device rd;
+    mt19937_64 gen(rd());
 
-        generate_random_file(input_file, N);
+    for (int run = 0; run < 5; ++run) {
+        string in_file  = input_prefix + "_run"  + to_string(run) + ".bin";
+        string out_file = merge_prefix + "_run" + to_string(run) + ".bin";
 
-        // MergeSort externo
+        // Generar datos aleatorios
+        generate_random_file(in_file, N_elems, gen);
+
+        // --- Mergesort externo ---
         read_count = write_count = 0;
-        ext_aridad_mergesort(input_file, output_file_merge, M, a);
-        merge_reads.push_back(read_count);
+        auto t0 = high_resolution_clock::now();
+        ext_aridad_mergesort(in_file, out_file, M, a);
+        auto t1 = high_resolution_clock::now();
+        merge_times.push_back(duration<double>(t1 - t0).count());
+        merge_reads .push_back(read_count);
         merge_writes.push_back(write_count);
 
-        // QuickSort externo
+        // --- Quicksort externo ---
         read_count = write_count = 0;
-        fstream f(input_file, ios::in | ios::out | ios::binary);
-        external_quicksort(f, 0, N, M, a);
-        quick_reads.push_back(read_count);
+        fstream f(in_file, ios::in | ios::out | ios::binary);
+        auto q0 = high_resolution_clock::now();
+        external_quicksort(f, 0, N_elems, M, a);
+        auto q1 = high_resolution_clock::now();
+        quick_times .push_back(duration<double>(q1 - q0).count());
+        quick_reads .push_back(read_count);
         quick_writes.push_back(write_count);
         f.close();
 
-        remove(input_file.c_str());
-        remove(output_file_merge.c_str());
-        remove(output_file_quick.c_str());
+        // Eliminar archivos temporales
+        remove(in_file.c_str());
+        remove(out_file.c_str());
     }
 
-    auto avg_size = [](const vector<size_t>& v) {
-        size_t sum = 0;
+    // Función auxiliar para promedio
+    auto avg_size = [&](const auto &v) {
+        double sum = 0;
         for (auto x : v) sum += x;
         return sum / v.size();
     };
 
-    size_t N_bytes = N * INT64_SIZE;
-    out << N_bytes << " " 
-        << avg_size(merge_reads) << " " << avg_size(merge_writes) << " "
-        << avg_size(quick_reads) << " " << avg_size(quick_writes) << "\n";
+    double avg_mt = avg_size(merge_times);
+    double avg_mr = avg_size(merge_reads);
+    double avg_mw = avg_size(merge_writes);
+    double avg_qt = avg_size(quick_times);
+    double avg_qr = avg_size(quick_reads);
+    double avg_qw = avg_size(quick_writes);
+
+    // Salida: N en bytes, tiempos e I/Os promedio
+    size_t N_bytes = N_elems * INT64_SIZE;
+    out << N_bytes << " ";
+    out << avg_mt << " " << (avg_mr + avg_mw) << " ";
+    out << avg_qt << " " << (avg_qr + avg_qw) << "\n";
 }
 
 int main() {
-    size_t values[] = {4, 8, 16, 32, 60}; 
-    size_t a = 56;
+    // Factores de tamaño en múltiplos de M
+    vector<size_t> factors = {4, 8, 16, 32, 60};
+    size_t a = /* tu aridad óptima */ 50;
 
     ofstream out("resultados.txt");
-    if (!out.is_open()) {
-        cerr << "No se pudo abrir el archivo de salida.\n";
+    if (!out) {
+        cerr << "No se pudo abrir resultados.txt\n";
         return 1;
     }
 
-    // Cabecera
-    out << "# N_bytes Merge_lecturas Merge_escrituras Quick_lecturas Quick_escrituras\n";
+    // Cabecera: N_bytes Merge_time Merge_IO Quick_time Quick_IO
+    out << "# N_bytes Merge_time Merge_IO Quick_time Quick_IO\n";
 
-    for (size_t factor : values) {
-        size_t N = (M / INT64_SIZE) * factor;
-        cout << "Valor de N: " << N << endl;
-        run_experiment(N, a, out);
+    for (auto f : factors) {
+        size_t N_elems = (M / INT64_SIZE) * f;
+        cout << "Experimentando N=" << N_elems << " elementos...\n";
+        run_experiment(N_elems, a, out);
     }
 
     out.close();
+    cout << "Experimento completado: resultados.txt generado.\n";
     return 0;
 }
-

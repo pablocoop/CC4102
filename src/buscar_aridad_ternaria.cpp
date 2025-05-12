@@ -96,6 +96,28 @@ void buscar_aridad_optima_ternaria() {
 }
 
 int main() {
-    buscar_aridad_optima_ternaria();
+    const string input_file  = "busqueda_aridad_input.bin";
+    const string output_file = "busqueda_aridad_output.bin";
+
+    // Genera el fichero de prueba
+    generate_random_file(input_file, N);
+
+    // Valores de aridad a probar
+    vector<size_t> pruebas = {10, 50};
+    for (size_t d : pruebas) {
+        double reads, writes;
+        cout << "\n>>> Probando aridad a = " << d << " <<<\n";
+        double t = test_mergesort(input_file, output_file, d, reads, writes);
+        cout << "Resultado para a=" << d << " -> "
+             << "Tiempo: " << t << "s, "
+             << "I/Os: " << (reads + writes)
+             << " (Lecturas=" << reads
+             << ", Escrituras=" << writes << ")\n";
+    }
+
+    // Limpieza
+    eliminar_archivos_merged();
+    remove(input_file.c_str());
+    remove(output_file.c_str());
     return 0;
 }

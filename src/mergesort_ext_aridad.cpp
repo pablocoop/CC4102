@@ -164,7 +164,7 @@ void ext_aridad_mergesort(const string &in_fname, const string &out_fname, size_
     auto runs = create_initial_runs(in_fname, M_bytes);
     size_t actual_runs = runs.size();
     if (d > actual_runs) {
-        cerr << "MS: Aridad d=" << d << " > runs=" << actual_runs << ", capando a " << actual_runs << "\n";
+        //cerr << "MS: Aridad d=" << d << " > runs=" << actual_runs << ", capando a " << actual_runs << "\n";
         d = actual_runs;
     }
     auto final_runs = k_way_merge(runs, d, M_bytes);
