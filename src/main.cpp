@@ -16,7 +16,13 @@ using namespace chrono;
 const size_t M = 50 * 1024 * 1024; // 50 MB
 const size_t INT64_SIZE = sizeof(int64_t);
 
-// Genera archivo binario con números aleatorios
+/**
+ * @brief  Genera un archivo binario con numeros aleatorios de 64 bits.
+ * @tparam URNG  Tipo de motor de aleatoriedad.
+ * @param  filename     Ruta del archivo de salida.
+ * @param  num_elements Número de enteros a generar.
+ * @param  gen          Generador de números aleatorios.
+ */
 template<typename URNG>
 void generate_random_file(const string &filename, size_t num_elements, URNG &gen) {
     ofstream out(filename, ios::binary);
@@ -27,7 +33,13 @@ void generate_random_file(const string &filename, size_t num_elements, URNG &gen
     }
 }
 
-// Ejecuta el experimento: mide tiempo e I/O para Mergesort y Quicksort externo
+/**
+ * @brief  Ejecuta 5 corridas de Mergesort y Quicksort externo,  
+ *         promedia tiempos e I/Os y escribe en out.
+ * @param  N_elems  Número de enteros en cada archivo de prueba.
+ * @param  a        Aridad / número de pivotes.
+ * @param  out      Stream abierto para volcar resultados.
+ */
 void run_experiment(size_t N_elems, size_t a, ofstream &out) {
     // Prefijos para archivos temporales
     string input_prefix = "input_" + to_string(N_elems);
@@ -95,6 +107,11 @@ void run_experiment(size_t N_elems, size_t a, ofstream &out) {
     out << avg_qt << " " << (avg_qr + avg_qw) << "\n";
 }
 
+/**
+ * @brief  Función main: itera sobre {4M,8M,16M,32M,60M},  
+ *         llama a run_experiment y cierra resultados.
+ * @return Código de salida.
+ */
 int main() {
     // Factores de tamaño en múltiplos de M
     vector<size_t> factors = {4, 8, 16, 32, 60};

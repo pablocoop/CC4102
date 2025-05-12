@@ -9,7 +9,9 @@
 using namespace std;
 const size_t INT64_SIZE = sizeof(int64_t);
 
-// Ordenamiento en memoria interna (merge sort con programación dinámica)
+/**
+ * @copybrief merge_sort_internal
+ */
 void merge_sort_internal(vector<int64_t>& A, int /*dummy_l*/, int /*dummy_r*/) {
     size_t n = A.size();
     if (n < 2) return;
@@ -36,16 +38,25 @@ void merge_sort_internal(vector<int64_t>& A, int /*dummy_l*/, int /*dummy_r*/) {
     }
 }
 
+/**
+ * @copybrief read_block
+ */
 void read_block(ifstream &f, vector<int64_t> &buf, size_t cnt) {
     f.read(reinterpret_cast<char*>(buf.data()), cnt * INT64_SIZE);
     if (f.gcount() > 0) ++read_count;
 }
 
+/**
+ * @copybrief write_block
+ */
 void write_block(ofstream &f, const vector<int64_t> &buf, size_t cnt) {
     f.write(reinterpret_cast<const char*>(buf.data()), cnt * INT64_SIZE);
     ++write_count;
 }
 
+/**
+ * @copybrief create_initial_runs
+ */
 vector<string> create_initial_runs(const string &in_fname, size_t M_bytes) {
     ifstream fin(in_fname, ios::binary);
     fin.seekg(0, ios::end);
@@ -99,8 +110,14 @@ vector<string> create_initial_runs(const string &in_fname, size_t M_bytes) {
     return runs;
 }
 
+/**
+ * @brief  Nodo para el heap en el k-way merge.
+ */
 struct HeapNode { int64_t value; size_t idx; bool operator>(HeapNode const &o) const { return value > o.value; } };
 
+/**
+ * @copybrief k_way_merge_d
+ */
 vector<string> k_way_merge(const vector<string> &runs, size_t d, size_t M_bytes) {
     vector<string> cur = runs;
     size_t pass = 0;
@@ -159,6 +176,9 @@ vector<string> k_way_merge(const vector<string> &runs, size_t d, size_t M_bytes)
     return cur;
 }
 
+/**
+ * @copybrief ext_aridad_mergesort
+ */
 void ext_aridad_mergesort(const string &in_fname, const string &out_fname, size_t M_bytes, size_t d) {
     read_count = write_count = 0;
     auto runs = create_initial_runs(in_fname, M_bytes);

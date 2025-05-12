@@ -17,6 +17,10 @@ const size_t M = 50 * 1024 * 1024; // 50 MB
 const size_t INT64_SIZE = sizeof(int64_t);
 const size_t N = 60 * (M / INT64_SIZE);  // número de elementos en archivo de prueba
 
+
+/**
+ * @brief  Elimina todos los archivos temporales run_*.bin y merged_*.bin en cwd.
+ */
 void eliminar_archivos_merged() {
     namespace fs = std::filesystem;
     for (const auto& entry : fs::directory_iterator(".")) {
@@ -29,6 +33,11 @@ void eliminar_archivos_merged() {
     }
 }
 
+/**
+ * @brief  Genera un archivo binario con enteros aleatorios de 64 bits.
+ * @param  filename     Ruta del archivo de salida.
+ * @param  num_elements Número de enteros a generar.
+ */
 void generate_random_file(const string &filename, size_t num_elements) {
     ofstream out(filename, ios::binary);
     random_device rd;
@@ -40,6 +49,15 @@ void generate_random_file(const string &filename, size_t num_elements) {
     }
 }
 
+/**
+ * @brief  Ejecuta ext_aridad_mergesort una vez y captura I/O y tiempo.
+ * @param  in_file     Ruta del archivo de entrada.
+ * @param  out_file    Ruta del archivo de salida.
+ * @param  d           Aridad de merge.
+ * @param[out] avg_reads  Bloques leídos (read_count).
+ * @param[out] avg_writes Bloques escritos (write_count).
+ * @return Tiempo de ejecución en segundos.
+ */
 double test_mergesort(const string& in_file, const string& out_file, size_t d, double& avg_reads, double& avg_writes) {
     eliminar_archivos_merged();
     read_count = write_count = 0;
@@ -51,6 +69,10 @@ double test_mergesort(const string& in_file, const string& out_file, size_t d, d
     return duration<double>(t2 - t1).count();
 }
 
+/**
+ * @brief  Búsqueda ternaria de la aridad óptima en [2..b],  
+ *         imprimiendo comparaciones I/O(a1) vs I/O(a2).
+ */
 void buscar_aridad_optima_ternaria() {
     const string input_file = "busqueda_aridad_input.bin";
     const string output_file = "busqueda_aridad_output.bin";
@@ -95,6 +117,10 @@ void buscar_aridad_optima_ternaria() {
     remove(output_file.c_str());
 }
 
+/**
+ * @brief  Función main de prueba: compara sólo a=10 y a=50.
+ * @return Código de salida.
+ */
 int main() {
     const string input_file  = "busqueda_aridad_input.bin";
     const string output_file = "busqueda_aridad_output.bin";
