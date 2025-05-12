@@ -5,12 +5,15 @@
 #include <random>
 #include <climits>
 #include "mergesort_ext_aridad.h"
+#include "contadores.h" // si usas un archivo .h para declarar extern
 
 using namespace std;
 using namespace chrono;
 
 extern size_t read_count;
 extern size_t write_count;
+size_t read_count = 0;
+size_t write_count = 0;
 
 const size_t M = 50 * 1024 * 1024; // 50 MB
 const size_t INT64_SIZE = sizeof(int64_t);

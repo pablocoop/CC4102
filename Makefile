@@ -1,7 +1,3 @@
-# Makefile for C++ project
-# This Makefile is used to compile and run a C++ program
-# HAY QUE CAMBIARLO
-
 run:
-	g++ -std=c++17 main.cpp -o main.out
-	./main.out
+
+	g++ -std=c++17 -IC:\Users\pablo\OneDrive\Documentos\CC4102\CC4102\include .\src\main.cpp .\src\quicksort_externo.cpp .\src\mergesort_ext_aridad.cpp .\src\contadores.cpp -o main
