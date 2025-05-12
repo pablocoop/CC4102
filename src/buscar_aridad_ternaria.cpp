@@ -8,6 +8,8 @@
 #include <filesystem>
 #include "contadores.h"
 #include "mergesort_ext_aridad.h"
+// este archivo se intento implementar pero no se tuvo exito
+// se utilizo buscar_aridad.cpp
 
 using namespace std;
 using namespace chrono;

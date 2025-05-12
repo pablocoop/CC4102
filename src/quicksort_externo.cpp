@@ -12,13 +12,19 @@
 using namespace std;
 
 // Parámetros globales
-const size_t INT64_SIZE = sizeof(int64_t);
-const size_t BLOCK_SIZE = 4096; // 4KB
-const size_t MAX_IN_MEMORY = 50 * 1024 * 1024; // 50MB
+const size_t INT64_SIZE = sizeof(int64_t); ///< Tamaño en bytes de un valor de tipo int64_t.
+const size_t BLOCK_SIZE = 4096; ///< Tamaño del bloque (4 KB).
+const size_t MAX_IN_MEMORY = 50 * 1024 * 1024; ///< Máximo tamaño en memoria (50MB).
 
 #include "contadores.h"
 
-// Ordenar en memoria principal si el tamaño es suficientemente pequeño
+/**
+ * @brief Ordena una sección del archivo en memoria principal si es suficientemente pequeño.
+ * 
+ * @param file Referencia al archivo que se va a ordenar.
+ * @param start Posición de inicio en el archivo.
+ * @param end Posición final en el archivo.
+ */
 void sort_in_memory(fstream &file, size_t start, size_t end) {
     size_t num_elements = end - start;
     vector<int64_t> data(num_elements);
@@ -34,7 +40,16 @@ void sort_in_memory(fstream &file, size_t start, size_t end) {
     ++write_count;
 }
 
-// Seleccionar (a-1) pivotes aleatorios
+/**
+ * @brief Selecciona (a-1) pivotes aleatorios del archivo dentro del rango definido por start y end.
+ * 
+ * @param file Referencia al archivo en el que se seleccionarán los pivotes.
+ * @param start Posición de inicio en el archivo.
+ * @param end Posición final en el archivo.
+ * @param a Número de particiones a generar (el número de pivotes es a-1).
+ * 
+ * @return Un vector con los pivotes seleccionados.
+ */
 vector<int64_t> select_pivots(fstream &file, size_t start, size_t end, size_t a) {
     random_device rd;
     mt19937 gen(rd());
@@ -53,19 +68,27 @@ vector<int64_t> select_pivots(fstream &file, size_t start, size_t end, size_t a)
     return pivots;
 }
 
+/**
+ * @brief Divide el archivo en particiones basadas en los pivotes proporcionados.
+ * 
+ * @param file Referencia al archivo a particionar.
+ * @param start Posición de inicio en el archivo.
+ * @param end Posición final en el archivo.
+ * @param pivots Los pivotes que se utilizarán para la partición.
+ * 
+ * @return Un vector de pares con el nombre del archivo temporal y el número de elementos en esa partición.
+ */
 vector<pair<string, size_t>> partition(fstream &file, size_t start, size_t end, const vector<int64_t>& pivots) {
     size_t num_partitions = pivots.size() + 1;
     vector<ofstream> out_files(num_partitions);
     vector<string> filenames(num_partitions);
     vector<size_t> counts(num_partitions, 0);
 
-    // Generar nombres únicos para los archivos temporales
     for (size_t i = 0; i < num_partitions; ++i) {
         filenames[i] = "temp_part_" + to_string(i) + "_" + to_string(start) + ".bin";
         out_files[i].open(filenames[i], ios::binary);
     }
 
-    // Búferes por partición
     const size_t buffer_capacity = BLOCK_SIZE / INT64_SIZE;
     vector<vector<int64_t>> buffers(num_partitions);
 
@@ -87,7 +110,6 @@ vector<pair<string, size_t>> partition(fstream &file, size_t start, size_t end, 
             buffers[k].push_back(val);
             ++counts[k];
 
-            // Si el búfer alcanza su capacidad, escribir en el archivo correspondiente
             if (buffers[k].size() >= buffer_capacity) {
                 out_files[k].write(reinterpret_cast<const char*>(buffers[k].data()), buffers[k].size() * INT64_SIZE);
                 ++write_count;
@@ -96,7 +118,6 @@ vector<pair<string, size_t>> partition(fstream &file, size_t start, size_t end, 
         }
     }
 
-    // Escribir cualquier dato restante en los búferes
     for (size_t k = 0; k < num_partitions; ++k) {
         if (!buffers[k].empty()) {
             out_files[k].write(reinterpret_cast<const char*>(buffers[k].data()), buffers[k].size() * INT64_SIZE);
@@ -114,10 +135,17 @@ vector<pair<string, size_t>> partition(fstream &file, size_t start, size_t end, 
 }
 
 
-// Quicksort externo
+/**
+ * @brief Ordena un archivo utilizando Quicksort externo. Si la sección del archivo es lo suficientemente pequeña, se ordena en memoria.
+ * 
+ * @param file Referencia al archivo a ordenar.
+ * @param start Posición de inicio en el archivo.
+ * @param end Posición final en el archivo.
+ * @param M Tamaño máximo en memoria.
+ * @param a Número de particiones a generar.
+ */
 void external_quicksort(fstream &file, size_t start, size_t end, size_t M, size_t a) {
     if ((end - start) * INT64_SIZE <= M) {
-        // Ordenar directamente en el archivo original si cabe en memoria
         sort_in_memory(file, start, end);
         return;
     }
@@ -129,12 +157,10 @@ void external_quicksort(fstream &file, size_t start, size_t end, size_t M, size_
     for (const auto& [fname, elems] : partitions) {
         if (elems == 0) continue;
 
-        // Ordenar el subarchivo recursivamente
         fstream part_file(fname, ios::in | ios::out | ios::binary);
         external_quicksort(part_file, 0, elems, M, a);
         part_file.close();
 
-        // Solo si fue ordenado en el archivo temporal, copiar de nuevo al archivo principal
         if (elems * INT64_SIZE > M) {
             ifstream in(fname, ios::binary);
             file.seekp(current * INT64_SIZE, ios::beg);
